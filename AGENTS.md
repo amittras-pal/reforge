@@ -61,3 +61,10 @@ canonical, cross-cutting data model and conventions every other spec builds on.
 
 Before committing, run (from `app/`): `npm run check` and `npm run lint`. These are manual
 gates in v1 — no husky/lint-staged (F-01). Add/keep tests passing with `npm run test`.
+
+## Deployment
+
+`.github/workflows/deploy.yml` lints, tests, builds, and publishes `app/dist` to GitHub Pages
+on every push to `main` (or via manual `workflow_dispatch`) — see the root
+[`README.md`](./README.md#deployment) for details. Requires the repo's Pages source to be set
+to "GitHub Actions" once, in Settings → Pages.

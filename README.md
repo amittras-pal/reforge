@@ -44,6 +44,20 @@ npm run preview  # preview the production build
 
 Other useful scripts: `npm run check` (svelte-check + tsc), `npm run lint`, `npm run test`.
 
+## Deployment
+
+Every push to `main` that touches `app/**` runs [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml):
+lint → test → type-check + build, then publish `app/dist` to GitHub Pages. It can also be run
+manually from the Actions tab (`workflow_dispatch`).
+
+The app needs no per-deployment configuration — `vite.config.ts` uses a relative `base: './'`
+and every static asset/manifest/service-worker reference is relative, so the same build works
+unchanged whether it's served from a user page, a project page subpath, or previewed locally.
+Routing is hash-based (`svelte-spa-router`), so GitHub Pages needs no SPA-fallback/404 trick.
+
+One-time repo setup (not part of the workflow itself): in **Settings → Pages**, set
+**Source: GitHub Actions**. After that, the workflow both builds and deploys on every push.
+
 ## Repository layout
 
 - **[`app/`](./app)** — the application (Svelte + TS + Vite). See

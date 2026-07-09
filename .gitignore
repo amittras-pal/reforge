@@ -1,0 +1,12 @@
+# Repo-root-level ignores only. app/ has its own .gitignore for its dependencies/build
+# output/env files — keep those there rather than duplicating them here.
+
+# OS/editor cruft that can appear anywhere in the repo
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Guard against accidentally running npm install from the repo root instead of app/
+# (see AGENTS.md — all app code/commands live under app/).
+/node_modules/
