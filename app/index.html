@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <!-- viewport-fit=cover is required for env(safe-area-inset-*) to resolve to real values
+         in standalone/installed mode (FR-04.9), instead of always falling back to 0px. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <!-- Static fallback theme-color; overwritten synchronously below (and kept in sync by
+         main.ts) to match the actual resolved --bg for the active theme (FR-04.7). -->
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Reforge" />
+    <title>Reforge</title>
+    <script>
+      // Apply persisted theme/density before first paint (FR-02.10), and align the
+      // theme-color meta with the resolved --bg custom property (FR-04.7). Storage keys and
+      // encoding must match src/lib/stores/persisted.ts.
+      ;(function () {
+        try {
+          var theme = JSON.parse(
+            localStorage.getItem('reforge:theme') || '"system"',
+          )
+          var density = JSON.parse(
+            localStorage.getItem('reforge:density') || '"medium"',
+          )
+          document.documentElement.setAttribute('data-theme', theme)
+          document.documentElement.setAttribute('data-density', density)
+          var bg = getComputedStyle(document.documentElement)
+            .getPropertyValue('--bg')
+            .trim()
+          if (bg) {
+            document
+              .querySelector('meta[name="theme-color"]')
+              .setAttribute('content', bg)
+          }
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

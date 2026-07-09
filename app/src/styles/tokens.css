@@ -1,0 +1,102 @@
+/**
+ * Design tokens — features/00-foundation-architecture.md §6.1, §6.2, §6.4.
+ *
+ * This file is the single source of truth for these CSS custom properties; don't
+ * redeclare them elsewhere. The app shell (F-02) is responsible for importing this file
+ * and for wiring `data-theme` / `data-density` onto the document root from user settings.
+ */
+
+:root {
+  /* Spacing scale (medium density — the default) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* Type scale — base body text is 14px at medium density */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 28px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Minimum interactive touch target size, even at compact density */
+  --touch-target-min: 44px;
+
+  /* Semantic color palette — light theme (default) */
+  --bg: #ffffff;
+  --surface: #f4f4f5;
+  --text: #18181b;
+  --muted: #6b7280;
+  --primary: #4f46e5;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+}
+
+/* Dark theme — explicit user choice (`theme = 'dark'`) */
+:root[data-theme='dark'] {
+  --bg: #16171d;
+  --surface: #1f2028;
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --primary: #818cf8;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
+
+/* Dark theme — system preference, only when the user hasn't made an explicit choice (`theme = 'system'`) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    --bg: #16171d;
+    --surface: #1f2028;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --primary: #818cf8;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #f87171;
+  }
+}
+
+/* Density modes (§6.2) — medium (above) is the default */
+:root[data-density='comfortable'] {
+  --sp-1: 6px;
+  --sp-2: 12px;
+  --sp-3: 16px;
+  --sp-4: 20px;
+  --sp-5: 28px;
+  --sp-6: 40px;
+  --fs-md: 15px;
+}
+
+:root[data-density='compact'] {
+  --sp-1: 3px;
+  --sp-2: 6px;
+  --sp-3: 8px;
+  --sp-4: 12px;
+  --sp-5: 18px;
+  --sp-6: 24px;
+  --fs-md: 13px;
+}
+
+/* Accessibility (FR-00.14): respect reduced-motion preference globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
