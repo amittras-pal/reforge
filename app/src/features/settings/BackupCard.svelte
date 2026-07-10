@@ -9,6 +9,7 @@
     type ImportSummary,
     type PreparedImport,
   } from '../../lib/backup'
+  import { hydrateSettingsFromMeta } from '../../lib/stores/settings'
   import { showToast } from '../../lib/stores/toast'
   import { createId } from '../../lib/utils'
   import Button from '../../lib/ui/Button.svelte'
@@ -116,6 +117,7 @@
       // plain object first.
       const data = $state.snapshot(prepared.data)
       importSummary = await applyImport(data, importMode)
+      await hydrateSettingsFromMeta()
       showToast('Import complete', 'success')
       prepared = null
       await refreshReminder()
