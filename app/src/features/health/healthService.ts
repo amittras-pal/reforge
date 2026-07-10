@@ -20,6 +20,27 @@ export const WHR_NORMAL_MAX = 0.9
 export const VISCERAL_FAT_NORMAL_MAX = 9
 export const INBODY_SCORE_GOOD_MIN = 80
 
+/**
+ * WHR "substantially increased risk" cut-offs are gender-specific (WHO guidance, corroborated
+ * by e.g. https://www.healthline.com/health/waist-to-hip-ratio: men ≤0.90, women ≤0.85 is
+ * lower-risk) — unlike Visceral Fat Level, which InBody presents on a single 1..9-is-normal
+ * scale with no gender split, so it isn't made gender-specific here (Notes for Improvement.md).
+ */
+export const WHR_NORMAL_MAX_MALE = 0.9
+export const WHR_NORMAL_MAX_FEMALE = 0.85
+
+/**
+ * Gender-specific WHR guidance line for the report detail view (FR-09.6, Notes for
+ * Improvement.md). Falls back to the original generic range for `'other'`/unset gender — there
+ * isn't a published equivalent threshold for that case, so gender-specific handling is
+ * intentionally dropped there rather than guessed at.
+ */
+export function whrRangeHint(gender: UserProfile['gender']): string {
+  if (gender === 'male') return `Normal: below ${WHR_NORMAL_MAX_MALE}`
+  if (gender === 'female') return `Normal: below ${WHR_NORMAL_MAX_FEMALE}`
+  return `Normal range: ${WHR_NORMAL_MIN}–${WHR_NORMAL_MAX} (set your gender in Settings for a precise threshold)`
+}
+
 export const SEGMENT_PART_LABELS: Record<keyof Segmental, string> = {
   leftArm: 'Left Arm',
   rightArm: 'Right Arm',
@@ -27,6 +48,18 @@ export const SEGMENT_PART_LABELS: Record<keyof Segmental, string> = {
   rightLeg: 'Right Leg',
   torso: 'Torso',
 }
+
+/**
+ * Formats a target "control" value (Weight/Fat/Muscle Control) as a signed instruction rather
+ * than a raw signed number (Notes for Improvement.md): positive → "Add", negative → "Drop".
+ */
+export function formatControlValue(value: number | undefined): string {
+  if (value === undefined) return '—'
+  if (value > 0) return `Gain ${round1(Math.abs(value))}kg`
+  if (value < 0) return `Drop ${round1(Math.abs(value))}kg`
+  return 'On target'
+}
+
 
 /** Rounds to 1 decimal place (matches the InBody sheet's own display precision). */
 function round1(value: number): number {
