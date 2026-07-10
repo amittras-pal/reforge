@@ -61,7 +61,8 @@ export async function buildBackupEnvelope(
 }
 
 function downloadJson(payload: unknown, filename: string): void {
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+  // Minified (no pretty-print whitespace) to keep backup files small (Notes for Improvement.md).
+  const blob = new Blob([JSON.stringify(payload)], {
     type: 'application/json',
   })
   const url = URL.createObjectURL(blob)

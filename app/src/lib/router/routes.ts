@@ -27,7 +27,7 @@ export const routes: RouteDefinition = {
   '/calendar': CalendarScreen,
   '/calendar/:date': SessionDetailScreen,
 
-  '/configure': wrap({ component: RedirectRoute, props: { to: '/configure/exercises' } }),
+  '/configure': wrap({ component: RedirectRoute, props: { to: '/configure/routines' } }),
   '/configure/exercises': ExercisesScreen,
   '/configure/routines': RoutinesScreen,
   '/configure/routines/new': RoutineEditorScreen,

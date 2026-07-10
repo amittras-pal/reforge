@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import type { Density, Theme, Weekday } from '../../lib/domain'
   import { appBarAction, pageTitle } from '../../lib/stores/shell'
   import {
     density,
+    exampleProgramDismissed,
     profile,
     resetSettings,
     theme,
@@ -59,25 +61,73 @@
   let themeValue = $state<string>($theme)
   let densityValue = $state<string>($density)
 
+  // These fields are only a one-way *outbound* echo of the store below by default, so an
+  // *external* change to the store (import — FR-05.10/Notes for Improvement.md: imported
+  // profile data wasn't showing up anywhere, including here if Settings was already open)
+  // would otherwise never be reflected back into these fields. Each pair of effects below
+  // compares against the last value *this component* wrote out to tell "the store changed
+  // because we typed" (ignore — already showing the right thing) apart from "the store
+  // changed some other way" (e.g. import — resync the fields from it).
+  let lastWrittenProfile = untrack(() => JSON.stringify($profile))
+  let lastWrittenWeekStart = untrack(() => $weekStartsOn)
+  let lastWrittenTheme = untrack(() => $theme)
+  let lastWrittenDensity = untrack(() => $density)
+
   $effect(() => {
-    profile.set({
+    const next = {
       name: name || undefined,
       birthday: birthday || undefined,
       heightCm: heightCm ? Number(heightCm) : undefined,
       gender: (gender || undefined) as 'male' | 'female' | 'other' | undefined,
-    })
+    }
+    lastWrittenProfile = JSON.stringify(next)
+    profile.set(next)
   })
 
   $effect(() => {
-    weekStartsOn.set(Number(weekStart) as Weekday)
+    const serialized = JSON.stringify($profile)
+    if (serialized === lastWrittenProfile) return
+    lastWrittenProfile = serialized
+    name = $profile.name ?? ''
+    birthday = $profile.birthday ?? ''
+    heightCm = $profile.heightCm !== undefined ? String($profile.heightCm) : ''
+    gender = $profile.gender ?? ''
   })
 
   $effect(() => {
-    theme.set(themeValue as Theme)
+    const next = Number(weekStart) as Weekday
+    lastWrittenWeekStart = next
+    weekStartsOn.set(next)
   })
 
   $effect(() => {
-    density.set(densityValue as Density)
+    if ($weekStartsOn === lastWrittenWeekStart) return
+    lastWrittenWeekStart = $weekStartsOn
+    weekStart = String($weekStartsOn)
+  })
+
+  $effect(() => {
+    const next = themeValue as Theme
+    lastWrittenTheme = next
+    theme.set(next)
+  })
+
+  $effect(() => {
+    if ($theme === lastWrittenTheme) return
+    lastWrittenTheme = $theme
+    themeValue = $theme
+  })
+
+  $effect(() => {
+    const next = densityValue as Density
+    lastWrittenDensity = next
+    density.set(next)
+  })
+
+  $effect(() => {
+    if ($density === lastWrittenDensity) return
+    lastWrittenDensity = $density
+    densityValue = $density
   })
 
   function handleReset() {
@@ -195,7 +245,12 @@
 
   <Card>
     <h2>Workout setup</h2>
-    <ExampleProgramCard />
+    {#if !$exampleProgramDismissed}
+      <ExampleProgramCard
+        onLoaded={() => exampleProgramDismissed.set(true)}
+        onDismiss={() => exampleProgramDismissed.set(true)}
+      />
+    {/if}
     <button type="button" class="guide-link" onclick={() => (guideOpen = true)}>
       How should I structure a training day?
     </button>
