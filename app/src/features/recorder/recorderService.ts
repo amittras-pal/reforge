@@ -22,6 +22,8 @@ export interface CalendarCell {
   weekday: Weekday
   inCurrentMonth: boolean
   isToday: boolean
+  /** Non-interactive, same as adjacent-month padding days (Notes for Improvement.md). */
+  isFuture: boolean
 }
 
 /**
@@ -54,6 +56,7 @@ export function getMonthGrid(
       weekday: cellDate.getDay() as Weekday,
       inCurrentMonth: cellDate.getMonth() === month - 1,
       isToday: dateStr === today,
+      isFuture: dateStr > today,
     })
   }
   return cells

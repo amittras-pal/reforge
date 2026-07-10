@@ -119,9 +119,9 @@
       <button
         type="button"
         class="cell"
-        class:dimmed={!cell.inCurrentMonth}
+        class:dimmed={!cell.inCurrentMonth || cell.isFuture}
         class:today={cell.isToday}
-        disabled={!cell.inCurrentMonth}
+        disabled={!cell.inCurrentMonth || cell.isFuture}
         onclick={() => selectDate(cell.date)}
       >
         <span class="day-number">{Number(cell.date.slice(8, 10))}</span>
