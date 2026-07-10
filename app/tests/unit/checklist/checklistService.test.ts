@@ -11,7 +11,7 @@ import {
   type ExerciseInput,
   type RoutineInput,
 } from '../../../src/lib/db'
-import { ACTIVE_SESSION_ID, type SessionLog } from '../../../src/lib/domain'
+import { ACTIVE_SESSION_ID, type LoggedItem, type SessionLog } from '../../../src/lib/domain'
 import { addDays, todayLocalDate, yesterdayLocalDate } from '../../../src/lib/utils'
 import {
   discardSession,
@@ -20,6 +20,7 @@ import {
   finishSession,
   findDuplicateSessionLogs,
   getScheduledRoutines,
+  groupItemsByRoutine,
   hasAnyLibraryData,
   sessionProgress,
   startSession,
@@ -145,6 +146,10 @@ describe('startSession (FR-07.6, FR-07.17, FR-07.20)', () => {
     expect(session.routineNameSnapshot).toBe('Lower Body A + PFMT')
     expect(session.routineId).toBe(routineAId)
     expect(session.items).toHaveLength(2)
+    expect(session.items[0]?.routineId).toBe(routineAId)
+    expect(session.items[0]?.routineNameSnapshot).toBe('Lower Body A')
+    expect(session.items[1]?.routineId).toBe(routineBId)
+    expect(session.items[1]?.routineNameSnapshot).toBe('PFMT')
   })
 
   it('sets meta.activeSessionId when starting', async () => {
@@ -387,5 +392,60 @@ describe('fillSetsFromPlan (mark-complete autofill: only empty fields, per notes
   it('preserves an explicit 0 value rather than treating it as empty', () => {
     const filled = fillSetsFromPlan([{ setNo: 1, reps: 0, weight: 0, done: false }], planned)
     expect(filled).toEqual([{ setNo: 1, reps: 0, weight: 0, done: true }])
+  })
+})
+
+describe('groupItemsByRoutine (Notes for Improvement.md: group a combined session by routine)', () => {
+  function makeItem(overrides: Partial<LoggedItem> = {}): LoggedItem {
+    return {
+      exerciseId: overrides.exerciseId ?? 'ex1',
+      nameSnapshot: overrides.nameSnapshot ?? 'Exercise',
+      type: 'sets_reps',
+      planned: { kind: 'sets_reps', sets: 3, repsMin: 8 },
+      completed: false,
+      skipped: false,
+      ...overrides,
+    }
+  }
+
+  it('keeps a single-routine session as one group', () => {
+    const items = [
+      makeItem({ exerciseId: 'a', routineId: 'r1', routineNameSnapshot: 'Lower Body A' }),
+      makeItem({ exerciseId: 'b', routineId: 'r1', routineNameSnapshot: 'Lower Body A' }),
+    ]
+    const groups = groupItemsByRoutine(items)
+    expect(groups).toHaveLength(1)
+    expect(groups[0]?.routineName).toBe('Lower Body A')
+    expect(groups[0]?.items.map((entry) => entry.item.exerciseId)).toEqual(['a', 'b'])
+  })
+
+  it('splits a combined session into ordered groups, one per routine', () => {
+    const items = [
+      makeItem({ exerciseId: 'a', routineId: 'r1', routineNameSnapshot: 'Warm-up' }),
+      makeItem({ exerciseId: 'b', routineId: 'r2', routineNameSnapshot: 'Lower Body A' }),
+      makeItem({ exerciseId: 'c', routineId: 'r2', routineNameSnapshot: 'Lower Body A' }),
+      makeItem({ exerciseId: 'd', routineId: 'r3', routineNameSnapshot: 'Cooldown' }),
+    ]
+    const groups = groupItemsByRoutine(items)
+    expect(groups.map((g) => g.routineName)).toEqual(['Warm-up', 'Lower Body A', 'Cooldown'])
+    expect(groups[1]?.items.map((entry) => entry.index)).toEqual([1, 2])
+  })
+
+  it('preserves each item\'s original flat-array index within its group', () => {
+    const items = [
+      makeItem({ exerciseId: 'a', routineId: 'r1' }),
+      makeItem({ exerciseId: 'b', routineId: 'r2' }),
+      makeItem({ exerciseId: 'c', routineId: 'r1' }),
+    ]
+    const groups = groupItemsByRoutine(items)
+    const r1Group = groups.find((g) => g.key === 'r1')
+    expect(r1Group?.items.map((entry) => entry.index)).toEqual([0, 2])
+  })
+
+  it('falls back to a single "unknown" group for items without a routineId (pre-existing data)', () => {
+    const items = [makeItem({ exerciseId: 'a' }), makeItem({ exerciseId: 'b' })]
+    const groups = groupItemsByRoutine(items)
+    expect(groups).toHaveLength(1)
+    expect(groups[0]?.key).toBe('unknown')
   })
 })

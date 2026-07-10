@@ -6,6 +6,7 @@ import {
   calculatePbf,
   calculateTotalWeight,
   emptySegmentalForm,
+  formatControlValue,
   formatReportSummary,
   getTrendSeries,
   isProfileIncomplete,
@@ -16,6 +17,7 @@ import {
   segmentalToFormValue,
   sortReportsByDateDesc,
   TREND_METRICS,
+  whrRangeHint,
 } from '../../../src/features/health/healthService'
 
 function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
@@ -209,5 +211,38 @@ describe('getTrendSeries (FR-09.13/AC-09.9)', () => {
     expect(series.points).toEqual([])
     expect(series.current).toBeUndefined()
     expect(series.delta).toBeUndefined()
+  })
+})
+
+describe('whrRangeHint (FR-09.6, gender-specific WHR guidance)', () => {
+  it('uses the male cut-off (WHO/Healthline: 0.90) for male', () => {
+    expect(whrRangeHint('male')).toBe('Normal: below 0.9')
+  })
+
+  it('uses the female cut-off (WHO/Healthline: 0.85) for female', () => {
+    expect(whrRangeHint('female')).toBe('Normal: below 0.85')
+  })
+
+  it('falls back to the generic range for other/unset gender', () => {
+    expect(whrRangeHint('other')).toContain('0.8–0.9')
+    expect(whrRangeHint(undefined)).toContain('0.8–0.9')
+  })
+})
+
+describe('formatControlValue (Notes for Improvement.md: Add/Drop phrasing)', () => {
+  it('formats a positive value as Add', () => {
+    expect(formatControlValue(2.3)).toBe('Add 2.3kg')
+  })
+
+  it('formats a negative value as Drop, using the absolute magnitude', () => {
+    expect(formatControlValue(-1.5)).toBe('Drop 1.5kg')
+  })
+
+  it('formats zero as On target', () => {
+    expect(formatControlValue(0)).toBe('On target')
+  })
+
+  it('formats undefined as an em dash', () => {
+    expect(formatControlValue(undefined)).toBe('—')
   })
 })

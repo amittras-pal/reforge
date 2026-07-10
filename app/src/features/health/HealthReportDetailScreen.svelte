@@ -4,6 +4,7 @@
   import type { HealthReportInput } from '../../lib/db'
   import { healthReportsRepo, liveQueryStore } from '../../lib/db'
   import { appBarAction, pageTitle } from '../../lib/stores/shell'
+  import { profile } from '../../lib/stores/settings'
   import { showToast } from '../../lib/stores/toast'
   import Button from '../../lib/ui/Button.svelte'
   import Card from '../../lib/ui/Card.svelte'
@@ -16,8 +17,7 @@
   import {
     INBODY_SCORE_GOOD_MIN,
     VISCERAL_FAT_NORMAL_MAX,
-    WHR_NORMAL_MAX,
-    WHR_NORMAL_MIN,
+    whrRangeHint,
   } from './healthService'
 
   /**
@@ -143,7 +143,7 @@
     <Card>
       <h2>Ratios & Visceral Fat</h2>
       <FieldDisplay label="Waist-Hip Ratio" value={report.whr} />
-      <p class="hint">Normal range: {WHR_NORMAL_MIN}–{WHR_NORMAL_MAX}</p>
+      <p class="hint">{whrRangeHint($profile.gender)}</p>
       <FieldDisplay label="Visceral Fat Level" value={report.visceralFatLevel} />
       <p class="hint">Normal: below {VISCERAL_FAT_NORMAL_MAX}</p>
     </Card>

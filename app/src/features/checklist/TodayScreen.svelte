@@ -15,6 +15,7 @@
   import Button from '../../lib/ui/Button.svelte'
   import ConfirmDialog from '../../lib/ui/ConfirmDialog.svelte'
   import EmptyState from '../../lib/ui/EmptyState.svelte'
+  import Icon from '../../lib/ui/Icon.svelte'
   import ActiveSessionView from './ActiveSessionView.svelte'
   import {
     expireStaleActiveSession,
@@ -46,6 +47,22 @@
   const hasLibraryData = $derived($exercises.length > 0 && $routines.length > 0)
 
   let startSheetOpen = $state(false)
+
+  // Agenda (routine preview) starts collapsed once today already has a logged session — the
+  // list is no longer the primary thing to look at (Notes for Improvement.md); otherwise it
+  // starts expanded. Once the user manually toggles it, that choice sticks for the rest of the
+  // page visit instead of snapping back every time `todaysLogs` re-emits.
+  let agendaExpanded = $state(true)
+  let userToggledAgenda = false
+  $effect(() => {
+    if (userToggledAgenda) return
+    agendaExpanded = $todaysLogs.length === 0
+  })
+
+  function toggleAgenda() {
+    userToggledAgenda = true
+    agendaExpanded = !agendaExpanded
+  }
 
   // "Starting the same agenda again" confirmation (notes.md) — set when a start attempt finds
   // logs already on record for that date + routine; the real `startSession()` call is deferred
@@ -125,16 +142,27 @@
     {:else if todaysRoutines.length === 0}
       <EmptyState title="Rest day" message="No routine is scheduled for today." />
       <Button variant="secondary" onclick={() => (startSheetOpen = true)}>
-        Start a different routine
+        Choose routine
       </Button>
     {:else}
-      <RoutinePreviewList routines={todaysRoutines} {exercisesById} />
       <div class="actions">
-        <Button variant="primary" onclick={handleStartToday}>Start today's session</Button>
+        <Button variant="primary" onclick={handleStartToday}>
+          Start
+          <Icon name="play" size={16} />
+        </Button>
         <Button variant="secondary" onclick={() => (startSheetOpen = true)}>
-          Start a different routine
+          Choose routine
         </Button>
       </div>
+      {#if $todaysLogs.length > 0}
+        <button type="button" class="agenda-toggle" onclick={toggleAgenda}>
+          {agendaExpanded ? 'Hide' : "Show"} today's agenda
+          <Icon name={agendaExpanded ? 'chevron-up' : 'chevron-down'} size={18} />
+        </button>
+      {/if}
+      {#if agendaExpanded}
+        <RoutinePreviewList routines={todaysRoutines} {exercisesById} />
+      {/if}
     {/if}
   </div>
 {/if}
@@ -163,8 +191,11 @@
   }
   .actions {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: var(--sp-2);
+  }
+  .actions :global(.btn) {
+    flex: 1;
   }
   .already-logged {
     display: flex;
@@ -187,6 +218,20 @@
     font-weight: 600;
     cursor: pointer;
     padding: 0;
+  }
+  .agenda-toggle {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    min-height: var(--touch-target-min);
   }
 </style>
 

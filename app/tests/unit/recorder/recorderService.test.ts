@@ -62,6 +62,16 @@ describe('getMonthGrid (FR-08.4)', () => {
     const otherCells = grid.filter((c) => c.date !== today)
     expect(otherCells.every((c) => !c.isToday)).toBe(true)
   })
+
+  it('flags isFuture for dates after today, but not today or earlier (Notes for Improvement.md)', () => {
+    const today = todayLocalDate()
+    const [year, month] = today.split('-').map(Number) as [number, number]
+    const grid = getMonthGrid(year, month, 0)
+    const todayCell = grid.find((c) => c.date === today)
+    expect(todayCell?.isFuture).toBe(false)
+    expect(grid.filter((c) => c.date < today).every((c) => !c.isFuture)).toBe(true)
+    expect(grid.filter((c) => c.date > today).every((c) => c.isFuture)).toBe(true)
+  })
 })
 
 describe('currentWeekRange', () => {

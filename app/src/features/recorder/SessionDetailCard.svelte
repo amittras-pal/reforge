@@ -2,6 +2,7 @@
   import { untrack } from 'svelte'
   import type { SessionLog } from '../../lib/domain'
   import { showToast } from '../../lib/stores/toast'
+  import Button from '../../lib/ui/Button.svelte'
   import Card from '../../lib/ui/Card.svelte'
   import Chip from '../../lib/ui/Chip.svelte'
   import ConfirmDialog from '../../lib/ui/ConfirmDialog.svelte'
@@ -21,21 +22,25 @@
   let rpe = $state(untrack(() => session.rpe ?? 0))
   let notes = $state(untrack(() => session.notes ?? ''))
   let confirmDeleteOpen = $state(false)
+  let saving = $state(false)
 
-  $effect(() => {
+  const isDirty = $derived(
+    (rpe > 0 ? rpe : undefined) !== session.rpe || (notes.trim() || undefined) !== session.notes,
+  )
+
+  async function handleSaveNotes() {
     const nextRpe = rpe > 0 ? rpe : undefined
     const nextNotes = notes.trim() || undefined
-    if (nextRpe === session.rpe && nextNotes === session.notes) return
-    const timer = setTimeout(async () => {
-      try {
-        await updateSessionFields(session.id, { rpe: nextRpe, notes: nextNotes })
-        showToast('Saved', 'success')
-      } catch {
-        showToast("Couldn't save changes. Please try again.", 'error')
-      }
-    }, 600)
-    return () => clearTimeout(timer)
-  })
+    saving = true
+    try {
+      await updateSessionFields(session.id, { rpe: nextRpe, notes: nextNotes })
+      showToast('Saved', 'success')
+    } catch {
+      showToast("Couldn't save changes. Please try again.", 'error')
+    } finally {
+      saving = false
+    }
+  }
 
   async function handleDelete() {
     try {
@@ -57,7 +62,7 @@
     <div class="title-block">
       <h3>{session.routineNameSnapshot}</h3>
       <p class="meta">
-        {formatTime(session.startedAt)}–{formatTime(session.completedAt)}
+        Recorded at {formatTime(session.startedAt)} - {formatTime(session.completedAt)}
       </p>
     </div>
     <div class="header-actions">
@@ -78,6 +83,9 @@
   <div class="editable">
     <NumberStepper label="RPE (optional, 1–10)" bind:value={rpe} min={0} max={10} />
     <TextField label="Notes (optional)" bind:value={notes} placeholder="How did it go?" />
+    <Button size="sm" onclick={handleSaveNotes} disabled={!isDirty || saving}>
+      {saving ? 'Saving…' : 'Save'}
+    </Button>
   </div>
 </Card>
 
@@ -123,5 +131,8 @@
     margin-top: var(--sp-4);
     padding-top: var(--sp-3);
     border-top: 1px solid var(--bg);
+  }
+  .editable :global(.btn) {
+    align-self: flex-end;
   }
 </style>

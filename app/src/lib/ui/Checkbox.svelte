@@ -40,6 +40,7 @@
 
 <style>
   .checkbox-row {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: var(--sp-2);

@@ -9,6 +9,7 @@
   import FieldDisplay from './FieldDisplay.svelte'
   import MetricTrendCard from './MetricTrendCard.svelte'
   import {
+    formatControlValue,
     formatReportSummary,
     getTrendSeries,
     sortReportsByDateDesc,
@@ -47,13 +48,16 @@
     {#if latest}
       <Card>
         <h2>Latest report — {formatDate(latest.reportDate)}</h2>
+        <div class="score-hero">
+          <span class="score-value">{latest.score ?? '—'}</span>
+          <span class="score-label">InBody Score</span>
+        </div>
         <div class="highlight-grid">
           <FieldDisplay label="Total Weight" value={latest.composition.totalWeightKg} unit="kg" />
           <FieldDisplay label="Target Weight" value={latest.targets.targetWeightKg} unit="kg" />
-          <FieldDisplay label="Weight Control" value={latest.targets.weightControlKg} unit="kg" />
-          <FieldDisplay label="Fat Control" value={latest.targets.fatControlKg} unit="kg" />
-          <FieldDisplay label="Muscle Control" value={latest.targets.muscleControlKg} unit="kg" />
-          <FieldDisplay label="InBody Score" value={latest.score} />
+          <FieldDisplay label="Weight Control" value={formatControlValue(latest.targets.weightControlKg)} />
+          <FieldDisplay label="Fat Control" value={formatControlValue(latest.targets.fatControlKg)} />
+          <FieldDisplay label="Muscle Control" value={formatControlValue(latest.targets.muscleControlKg)} />
         </div>
       </Card>
     {/if}
@@ -99,6 +103,27 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-1);
+  }
+  .score-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-3) 0 var(--sp-4);
+    margin-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--bg);
+  }
+  .score-value {
+    font-size: var(--fs-2xl);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--primary);
+  }
+  .score-label {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
   .trends {
     display: grid;
