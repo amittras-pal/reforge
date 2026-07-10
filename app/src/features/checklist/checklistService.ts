@@ -71,6 +71,8 @@ async function buildLoggedItems(routines: Routine[]): Promise<LoggedItem[]> {
         nameSnapshot: exercise.name,
         type: exercise.type,
         planned,
+        routineId: routine.id,
+        routineNameSnapshot: routine.name,
         setResults:
           planned.kind === 'sets_reps'
             ? Array.from({ length: planned.sets }, (_, i) => ({
@@ -241,4 +243,37 @@ export function fillSetsFromPlan(
     weight: set.weight ?? planned.weight,
     done: true,
   }))
+}
+
+/** One routine's worth of a (possibly-combined) active session's items, in original order. */
+export interface LoggedItemGroup {
+  /** `routineId`, or `'unknown'` for pre-existing data that predates that field. */
+  key: string
+  routineName: string
+  /** Paired with each item's index in the flat `items` array, so callers can still patch by
+   * index without needing to re-derive it (e.g. `activeSessionRepo`'s `items` shape). */
+  items: { item: LoggedItem; index: number }[]
+}
+
+/**
+ * Groups a session's flat `items` list by originating routine, preserving each item's overall
+ * order (Notes for Improvement.md: visually group a combined session's items by routine during
+ * an active session, the same way the pre-start agenda preview already does via
+ * `RoutinePreviewList`). Items without a `routineId` (sessions logged before that field existed)
+ * fall back into a single `'unknown'`-keyed group rather than one group per item.
+ */
+export function groupItemsByRoutine(items: LoggedItem[]): LoggedItemGroup[] {
+  const groups: LoggedItemGroup[] = []
+  const groupsByKey = new Map<string, LoggedItemGroup>()
+  items.forEach((item, index) => {
+    const key = item.routineId ?? 'unknown'
+    let group = groupsByKey.get(key)
+    if (!group) {
+      group = { key, routineName: item.routineNameSnapshot ?? '', items: [] }
+      groupsByKey.set(key, group)
+      groups.push(group)
+    }
+    group.items.push({ item, index })
+  })
+  return groups
 }

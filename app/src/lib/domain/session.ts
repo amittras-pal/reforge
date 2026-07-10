@@ -27,6 +27,15 @@ export interface LoggedItem {
   type: ExerciseType
   /** Snapshot of the prescription as planned. */
   planned: Prescription
+  /**
+   * Which routine (of a possibly-combined session) this item came from, + its name at session
+   * time (Notes for Improvement.md: visually group a combined session's items by routine, the
+   * same way the pre-start agenda preview already does). Optional: absent on session/backup
+   * data written before this field existed, and the UI falls back to a single ungrouped list
+   * in that case rather than assuming every historical record has it.
+   */
+  routineId?: UUID
+  routineNameSnapshot?: string
   /** Actuals for `sets_reps` exercises. */
   setResults?: LoggedSet[]
   /** Actuals for `duration` exercises. */

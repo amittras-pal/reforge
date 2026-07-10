@@ -12,7 +12,7 @@
   import Card from '../../lib/ui/Card.svelte'
   import ConfirmDialog from '../../lib/ui/ConfirmDialog.svelte'
   import SegmentedControl from '../../lib/ui/SegmentedControl.svelte'
-  import { discardSession, finishSession, sessionProgress } from './checklistService'
+  import { discardSession, finishSession, groupItemsByRoutine, sessionProgress } from './checklistService'
   import ExerciseLogRow from './ExerciseLogRow.svelte'
   import FinishSessionSheet from './FinishSessionSheet.svelte'
 
@@ -30,6 +30,11 @@
   let confirmDiscardOpen = $state(false)
 
   const progress = $derived(sessionProgress(items))
+  // Visually group a combined session's items by routine (Notes for Improvement.md), matching
+  // the pre-start agenda preview (`RoutinePreviewList`). Headers only render when there's more
+  // than one group — a single-routine session already shows its name in the page title/header.
+  const itemGroups = $derived(groupItemsByRoutine(items))
+  const showGroupHeaders = $derived(itemGroups.length > 1)
   const dateOptions = [
     { label: 'Today', value: todayLocalDate() },
     { label: 'Yesterday', value: yesterdayLocalDate() },
@@ -101,8 +106,13 @@
   </Card>
 
   <div class="items">
-    {#each items as item, i (item.exerciseId + '-' + i)}
-      <ExerciseLogRow {item} onChange={(patch) => handleItemChange(i, patch)} />
+    {#each itemGroups as group (group.key)}
+      {#if showGroupHeaders}
+        <h3 class="routine-group-header">{group.routineName}</h3>
+      {/if}
+      {#each group.items as { item, index } (item.exerciseId + '-' + index)}
+        <ExerciseLogRow {item} onChange={(patch) => handleItemChange(index, patch)} />
+      {/each}
     {/each}
   </div>
 
@@ -155,6 +165,15 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
+  }
+  .routine-group-header {
+    margin: var(--sp-2) 0 calc(-1 * var(--sp-1));
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--text);
+  }
+  .routine-group-header:first-child {
+    margin-top: 0;
   }
   .discard-link {
     align-self: center;
