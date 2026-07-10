@@ -229,9 +229,9 @@ describe('whrRangeHint (FR-09.6, gender-specific WHR guidance)', () => {
   })
 })
 
-describe('formatControlValue (Notes for Improvement.md: Add/Drop phrasing)', () => {
-  it('formats a positive value as Add', () => {
-    expect(formatControlValue(2.3)).toBe('Add 2.3kg')
+describe('formatControlValue (Notes for Improvement.md: Gain/Drop phrasing)', () => {
+  it('formats a positive value as Gain', () => {
+    expect(formatControlValue(2.3)).toBe('Gain 2.3kg')
   })
 
   it('formats a negative value as Drop, using the absolute magnitude', () => {
