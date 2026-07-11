@@ -206,6 +206,9 @@ interface LoggedItem {
   actualDurationSec?: number; // for duration
   actualDistanceMeters?: number;
   actualAvgHr?: number;
+  // duration stopwatch (FR-07.10), persisted so it survives reload/backgrounding:
+  stopwatchStartedAtMs?: number; // wall-clock epoch anchor; present only while running
+  stopwatchElapsedSec?: number;  // last-known elapsed; authoritative while stopped
   completed: boolean;
   skipped: boolean;
   notes?: string;

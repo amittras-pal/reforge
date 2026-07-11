@@ -8,10 +8,8 @@
    * Actuals editor for a `duration` item (FR-07.10): duration in minutes (matching the
    * Configurator's planned-duration unit, F-06), optional distance/avg HR, and an optional
    * count-up stopwatch that writes its elapsed time into the duration field when stopped.
-   * `stopwatchElapsedSec`/`stopwatchRunning` are owned by the parent (`ExerciseLogRow`), not
-   * locally — so the stopwatch's progress survives this component being unmounted when the
-   * accordion row collapses, and so the parent can read/stop it when marking the exercise
-   * complete from the header checkbox.
+   * `stopwatchElapsedSec`/`stopwatchStartedAtMs` are owned by the parent (`ExerciseLogRow`), not
+   * locally, so they survive this component unmounting (accordion collapse) and are persisted.
    */
   let {
     planned,
@@ -19,7 +17,7 @@
     actualDistanceMeters,
     actualAvgHr,
     stopwatchElapsedSec = $bindable(0),
-    stopwatchRunning = $bindable(false),
+    stopwatchStartedAtMs = $bindable(undefined),
     onChange,
   }: {
     planned: DurationPrescription
@@ -27,7 +25,7 @@
     actualDistanceMeters?: number
     actualAvgHr?: number
     stopwatchElapsedSec?: number
-    stopwatchRunning?: boolean
+    stopwatchStartedAtMs?: number
     onChange: (patch: {
       actualDurationSec?: number
       actualDistanceMeters?: number
@@ -74,7 +72,11 @@
 </script>
 
 <div class="duration-log">
-  <Stopwatch bind:elapsedSec={stopwatchElapsedSec} bind:running={stopwatchRunning} onStop={handleStopwatchStop} />
+  <Stopwatch
+    bind:elapsedSec={stopwatchElapsedSec}
+    bind:startedAtMs={stopwatchStartedAtMs}
+    onStop={handleStopwatchStop}
+  />
   <div class="field-row">
     <TextField
       label="Duration (min)"

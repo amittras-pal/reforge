@@ -27,11 +27,22 @@
 
   let expanded = $state(false)
   let skipReasonInput = $state(untrack(() => item.notes ?? ''))
-  // Lifted out of DurationLogger/Stopwatch (rather than owned there) so the stopwatch's progress
-  // survives the accordion collapsing, and so marking-complete below can read/stop it.
-  let stopwatchElapsedSec = $state(0)
-  let stopwatchRunning = $state(false)
+  // Lifted out of DurationLogger/Stopwatch so progress survives the accordion collapsing and
+  // marking-complete below can read/stop it. Seeded from the persisted item and written back
+  // below, so it also survives a full reload/backgrounding, not just the collapse.
+  let stopwatchElapsedSec = $state(untrack(() => item.stopwatchElapsedSec ?? 0))
+  let stopwatchStartedAtMs = $state<number | undefined>(untrack(() => item.stopwatchStartedAtMs))
   let durationConfirmOpen = $state(false)
+
+  // Persist on start/stop only, not every tick: `stopwatchStartedAtMs` changes just at those two
+  // transitions, so `stopwatchElapsedSec` is read via `untrack` to avoid depending on its ticks.
+  $effect(() => {
+    const startedAtMs = stopwatchStartedAtMs
+    onChange({
+      stopwatchStartedAtMs: startedAtMs,
+      stopwatchElapsedSec: untrack(() => stopwatchElapsedSec),
+    })
+  })
 
   function toggleExpanded() {
     expanded = !expanded
@@ -60,8 +71,8 @@
       return
     }
     if (item.type === 'duration' && item.planned.kind === 'duration') {
-      if (stopwatchRunning) {
-        stopwatchRunning = false
+      if (stopwatchStartedAtMs !== undefined) {
+        stopwatchStartedAtMs = undefined
         onChange({ completed, actualDurationSec: stopwatchElapsedSec })
         return
       }
@@ -152,7 +163,7 @@
           actualDistanceMeters={item.actualDistanceMeters}
           actualAvgHr={item.actualAvgHr}
           bind:stopwatchElapsedSec
-          bind:stopwatchRunning
+          bind:stopwatchStartedAtMs
           onChange={handleDurationChange}
         />
       {/if}

@@ -3,42 +3,95 @@
   import Icon from '../../lib/ui/Icon.svelte'
 
   /**
-   * Optional, user-started count-up stopwatch (FR-07.10). Counts up from 0 so the user may
-   * overshoot the planned duration — it's a real-time logging convenience, not a countdown.
-   * `elapsedSec`/`running` are bindable so a parent can seed/read/observe them (e.g. so marking
-   * the exercise complete from elsewhere can tell whether the stopwatch is currently running);
-   * `onStop` fires the final elapsed seconds when the user stops it, for the parent to copy into
-   * the actual-duration field.
+   * Optional, user-started count-up stopwatch (FR-07.10); may overshoot the planned duration.
+   *
+   * Anchored to wall-clock time, not counted `setInterval` ticks: backgrounding/screen-off
+   * throttles or suspends timers (even in installed PWAs), so a tick counter silently drifts.
+   * `startedAtMs` (bindable epoch ms) is the anchor; elapsed is always recomputed as
+   * `Date.now() - startedAtMs`, self-correcting on each tick and on visibility change.
+   *
+   * `elapsedSec` (bindable) is the last-known value for resuming/display; `onStop` fires the
+   * final elapsed seconds for the parent to copy into the actual-duration field.
    */
   let {
     elapsedSec = $bindable(0),
-    running = $bindable(false),
+    startedAtMs = $bindable(undefined),
     onStop,
   }: {
     elapsedSec?: number
-    running?: boolean
+    startedAtMs?: number
     onStop?: (finalElapsedSec: number) => void
   } = $props()
 
-  let intervalId: ReturnType<typeof setInterval> | undefined
+  const running = $derived(startedAtMs !== undefined)
+
+  let wakeLock: WakeLockSentinel | undefined
+
+  /** Recompute `elapsedSec` from the wall-clock anchor — the single source of truth. */
+  function sync() {
+    if (startedAtMs === undefined) return
+    elapsedSec = Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000))
+  }
+
+  async function acquireWakeLock() {
+    if (wakeLock || !('wakeLock' in navigator)) return
+    try {
+      const lock = await navigator.wakeLock.request('screen')
+      if (startedAtMs === undefined) {
+        // Stopped again before the request resolved — don't hold on to a stale lock.
+        lock.release().catch(() => {})
+        return
+      }
+      wakeLock = lock
+      wakeLock.addEventListener('release', () => {
+        wakeLock = undefined
+      })
+    } catch {
+      // Best-effort only — the wall-clock resync is the actual fix, this just helps avoid it.
+    }
+  }
+
+  function releaseWakeLock() {
+    wakeLock?.release().catch(() => {})
+    wakeLock = undefined
+  }
 
   function start() {
     if (running) return
-    running = true
-    intervalId = setInterval(() => {
-      elapsedSec += 1
-    }, 1000)
+    startedAtMs = Date.now() - elapsedSec * 1000
   }
 
   function stop() {
     if (!running) return
-    running = false
-    clearInterval(intervalId)
-    onStop?.(elapsedSec)
+    sync()
+    const finalElapsedSec = elapsedSec
+    startedAtMs = undefined
+    onStop?.(finalElapsedSec)
   }
 
+  // Interval + wake lock lifecycle, driven by `startedAtMs` — also resumes correctly on mount
+  // (reload, or the accordion row re-expanding), not just after Start is clicked.
   $effect(() => {
-    return () => clearInterval(intervalId)
+    if (startedAtMs === undefined) return
+    sync()
+    const intervalId = setInterval(sync, 1000)
+    acquireWakeLock()
+    return () => {
+      clearInterval(intervalId)
+      releaseWakeLock()
+    }
+  })
+
+  // Resync as soon as the page becomes visible again (don't wait for a throttled tick), and
+  // re-acquire the wake lock, which the platform releases whenever the document is hidden.
+  $effect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState !== 'visible') return
+      sync()
+      if (running) acquireWakeLock()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   })
 </script>
 

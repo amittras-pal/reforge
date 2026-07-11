@@ -42,6 +42,16 @@ export interface LoggedItem {
   actualDurationSec?: number
   actualDistanceMeters?: number
   actualAvgHr?: number
+  /**
+   * Duration stopwatch state (FR-07.10), persisted so a running stopwatch survives reloads and
+   * backgrounding. `stopwatchStartedAtMs` is a wall-clock epoch anchor — elapsed time is always
+   * recomputed as `Date.now() - stopwatchStartedAtMs` — present only while running.
+   * `stopwatchElapsedSec` is the last-known value: authoritative while stopped, and the baseline
+   * a subsequent Start resumes from. Independent of `actualDurationSec`, which the user may
+   * hand-edit without affecting the stopwatch.
+   */
+  stopwatchStartedAtMs?: number
+  stopwatchElapsedSec?: number
   completed: boolean
   skipped: boolean
   notes?: string
