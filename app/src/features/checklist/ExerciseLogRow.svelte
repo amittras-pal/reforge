@@ -35,12 +35,15 @@
   let durationConfirmOpen = $state(false)
 
   // Persist on start/stop only, not every tick: `stopwatchStartedAtMs` changes just at those two
-  // transitions, so `stopwatchElapsedSec` is read via `untrack` to avoid depending on its ticks.
+  // transitions, so the `onChange` call is wrapped in `untrack` — both to read `stopwatchElapsedSec`
+  // without depending on its ticks, and (critically) to avoid depending on `onChange` itself. The
+  // parent passes a fresh closure on every render, and calling it here updates the parent's state;
+  // if that read were tracked, this effect would re-fire every time its own call caused a
+  // re-render, looping forever (`effect_update_depth_exceeded`).
   $effect(() => {
     const startedAtMs = stopwatchStartedAtMs
-    onChange({
-      stopwatchStartedAtMs: startedAtMs,
-      stopwatchElapsedSec: untrack(() => stopwatchElapsedSec),
+    untrack(() => {
+      onChange({ stopwatchStartedAtMs: startedAtMs, stopwatchElapsedSec })
     })
   })
 
